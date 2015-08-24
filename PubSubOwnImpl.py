@@ -1,5 +1,28 @@
 __author__ = 'rbansal'
 
+import inspect
+
+
+class Subscriber(object):
+    def __init__(self, topic, callable):
+        self.topic = topic
+        self.to_call = callable
+        self.no_of_reqd_args = len(self.get_reqd_args(callable)) - 1  # for self
+
+    def get_reqd_args(self, callable):
+        args, varargs, varkw, defaults = inspect.getargspec(callable)
+        if defaults:
+            args = args[:-len(defaults)]
+        return args
+
+    def call_the_method(self, **kwargs):
+        #print 'arguments are ====', kwargs
+
+        if len(kwargs.keys()) == self.no_of_reqd_args:
+            return self.to_call(**kwargs)
+        else:
+            print 'callable NOT called, argument mismatch : expected - %d, got - %d' %(self.no_of_reqd_args, len(kwargs.keys()))
+
 
 class myPublisher(object):
     def __init__(self):
@@ -8,23 +31,27 @@ class myPublisher(object):
 
     def subscribe(self, callable, topic_name):
         subscriber_list = self.listener_dict.get(topic_name)
+
         if subscriber_list is None:  # this topic is not registered yet
             subscriber_list = []
-            subscriber_list.append(callable)
+            subscriber_list.append(Subscriber(topic_name, callable))
             self.listener_dict.setdefault(topic_name, subscriber_list)
         else:  # topic is already registered, just add another subscriber
-            subscriber_list.append(callable)
+            subscriber_list.append(Subscriber(topic_name, callable))
 
     # return all the topics registered with the publisher
     def getTopics(self):
         return self.listener_dict.keys()
 
     # send message to subscribers of a given topic
-    def sendMessage(self, topic, train_no, no_of_seats):
+    def sendMessage(self, topic, **kwargs):
         subscribers = self.listener_dict.get(topic)
         if subscribers is not None:
             for subscriber in subscribers:
-                subscriber(train_no, no_of_seats)
+                #dd = inspect.getcallargs(subscriber.to_call, **kwargs)
+                #print dd
+                subscriber.call_the_method(**kwargs)
+
 
 pub = myPublisher()
 
