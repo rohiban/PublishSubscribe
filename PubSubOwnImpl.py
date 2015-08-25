@@ -15,13 +15,15 @@ class Subscriber(object):
             args = args[:-len(defaults)]
         return args
 
-    def call_the_method(self, **kwargs):
+    def call_the_method(self, *args):
         #print 'arguments are ====', kwargs
 
-        if len(kwargs.keys()) == self.no_of_reqd_args:
-            return self.to_call(**kwargs)
+        #if len(kwargs.keys()) == self.no_of_reqd_args:
+        if len(args) == self.no_of_reqd_args:
+            return self.to_call(*args)
         else:
-            print 'callable NOT called, argument mismatch : expected - %d, got - %d' %(self.no_of_reqd_args, len(kwargs.keys()))
+            #print 'callable NOT called, argument mismatch : expected - %d, got - %d' %(self.no_of_reqd_args, len(kwargs.keys()))
+            print 'INFO : callable NOT called, argument mismatch; expected %d, got %d' %(self.no_of_reqd_args, len(args))
 
 
 class myPublisher(object):
@@ -44,13 +46,13 @@ class myPublisher(object):
         return self.listener_dict.keys()
 
     # send message to subscribers of a given topic
-    def sendMessage(self, topic, **kwargs):
+    def sendMessage(self, topic, *args):
         subscribers = self.listener_dict.get(topic)
         if subscribers is not None:
             for subscriber in subscribers:
                 #dd = inspect.getcallargs(subscriber.to_call, **kwargs)
                 #print dd
-                subscriber.call_the_method(**kwargs)
+                subscriber.call_the_method(*args)
 
 
 pub = myPublisher()
@@ -68,7 +70,8 @@ class IRCTC(object):
     # construct a callable object, with some parameters
     def publish_availability(self):
         for (train_no, topic) in self.dict.items():
-            pub.sendMessage(topic, train_no=train_no, no_of_seats=int(train_no/100))
+            #pub.sendMessage(topic, train_no=train_no, no_of_seats=int(train_no/100))
+            pub.sendMessage(topic, train_no, int(train_no/100))
 
 
 class Passenger(object):
@@ -83,6 +86,13 @@ class Passenger(object):
         print '    Availability for train # %d : %d' %(train_no, no_of_seats)
 
 
+class RandomStuff(object):
+    def __init__(self):
+        pass
+
+    def called_func(self, a, b):
+        print ' yay !  I got called ... with a = %d, b = %d' %(a, b)
+
 
 irctc = IRCTC()
 
@@ -91,6 +101,10 @@ rohit.interested_in(train_no=3456)
 
 sunder = Passenger('sunder', irctc)
 sunder.interested_in(train_no=5678)
+
+# some random subscriber
+r_sub = RandomStuff()
+pub.subscribe(r_sub.called_func, 'train-3456')
 
 print 'pub-sub example demonstration ->'
 
